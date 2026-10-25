@@ -1,0 +1,182 @@
+<!--
+  FieldPilot world: 3 solar panels in a row (y = 2.5, facing -y), one differential-drive robot
+  with a mast-mounted RGB camera, and visible vegetation obstructing panel_2.
+  Frame: x along the panel row, y toward the panels, z up. Units: m, kg, s, degrees.
+-->
+<mujoco model="fieldpilot">
+  <compiler angle="degree" autolimits="true"/>
+  <option timestep="0.002" integrator="implicitfast"/>
+  <statistic center="0 1.5 0.5" extent="8"/>
+
+  <visual>
+    <global offwidth="1280" offheight="960"/>
+    <quality shadowsize="4096"/>
+    <headlight ambient="0.35 0.35 0.35" diffuse="0.35 0.35 0.35" specular="0.05 0.05 0.05"/>
+  </visual>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.55 0.72 0.92" rgb2="0.95 0.97 1.0" width="512" height="512"/>
+    <texture name="gravel" type="2d" builtin="checker" rgb1="0.58 0.53 0.44" rgb2="0.54 0.49 0.41" width="512" height="512"/>
+    <material name="ground" texture="gravel" texrepeat="1 1" texuniform="true"/>
+    <material name="frame" rgba="0.78 0.80 0.82 1" specular="0.5" shininess="0.5"/>
+    <material name="cells" rgba="0.06 0.12 0.32 1" specular="0.6" shininess="0.8"/>
+    <material name="grid" rgba="0.72 0.75 0.80 1"/>
+    <material name="steel" rgba="0.45 0.47 0.50 1"/>
+    <material name="leaf_dark" rgba="0.13 0.38 0.10 1"/>
+    <material name="leaf_mid" rgba="0.22 0.52 0.14 1"/>
+    <material name="leaf_light" rgba="0.38 0.64 0.20 1"/>
+    <material name="robot_body" rgba="0.95 0.55 0.10 1"/>
+    <material name="rubber" rgba="0.08 0.08 0.08 1"/>
+    <material name="dark" rgba="0.15 0.15 0.15 1"/>
+  </asset>
+
+  <default>
+    <!-- Panel structure: legs + frame collide; cells and grid lines are visual only. -->
+    <default class="leg"><geom type="box" material="steel"/></default>
+    <default class="frame"><geom type="box" size="0.82 0.52 0.02" material="frame"/></default>
+    <default class="cells"><geom type="box" size="0.79 0.49 0.005" pos="0 0 0.018" material="cells" contype="0" conaffinity="0"/></default>
+    <default class="grid_row"><geom type="box" size="0.79 0.004 0.001" material="grid" contype="0" conaffinity="0"/></default>
+    <default class="grid_col"><geom type="box" size="0.004 0.49 0.001" material="grid" contype="0" conaffinity="0"/></default>
+    <!-- Vegetation is visual only (no collisions). -->
+    <default class="veg"><geom contype="0" conaffinity="0" material="leaf_mid"/></default>
+    <default class="wheel">
+      <geom type="cylinder" size="0.08 0.025" zaxis="0 1 0" material="rubber" friction="1.5 0.01 0.001" mass="0.5"/>
+      <joint type="hinge" axis="0 1 0" damping="0.01"/>
+    </default>
+    <!-- Casters: frictionless (condim=1); priority makes their contact params win over the floor's. -->
+    <default class="ghost"><geom contype="0" conaffinity="0" rgba="0.15 0.45 0.95 0.55"/></default>
+    <default class="caster"><geom type="sphere" size="0.03" material="dark" condim="1" priority="1" mass="0.1"/></default>
+  </default>
+
+  <worldbody>
+    <light name="sun" directional="true" pos="0 -5 10" dir="-0.3 0.5 -1" castshadow="true"
+           diffuse="0.75 0.75 0.7" specular="0.2 0.2 0.2"/>
+    <geom name="floor" type="plane" size="20 20 0.1" material="ground"/>
+
+    <!-- Fixed cameras for overview images / demo video. -->
+    <camera name="overview" pos="0 -5 4.5" xyaxes="1 0 0 0 0.524 0.851" fovy="55"/>
+
+    <!-- ===================== Panel 1 (healthy, a few low grass tufts) ===================== -->
+    <body name="panel_1" pos="-3 2.5 0">
+      <geom class="leg" size="0.04 0.04 0.385" pos="-0.65 -0.25 0.385"/>
+      <geom class="leg" size="0.04 0.04 0.385" pos="0.65 -0.25 0.385"/>
+      <geom class="leg" size="0.04 0.04 0.6" pos="-0.65 0.25 0.6"/>
+      <geom class="leg" size="0.04 0.04 0.6" pos="0.65 0.25 0.6"/>
+      <body name="panel_1_surface" pos="0 0 1.0" euler="40 0 0">
+        <geom class="frame" name="panel_1_frame"/>
+        <geom class="cells"/>
+        <geom class="grid_row" pos="0 -0.163 0.0235"/>
+        <geom class="grid_row" pos="0 0.163 0.0235"/>
+        <geom class="grid_col" pos="-0.527 0 0.0235"/>
+        <geom class="grid_col" pos="-0.263 0 0.0235"/>
+        <geom class="grid_col" pos="0 0 0.0235"/>
+        <geom class="grid_col" pos="0.263 0 0.0235"/>
+        <geom class="grid_col" pos="0.527 0 0.0235"/>
+      </body>
+      <!-- Low ground tufts: present but NOT obstructing the panel. -->
+      <geom class="veg" type="capsule" size="0.012" fromto="-0.5 -0.7 0 -0.52 -0.72 0.14"/>
+      <geom class="veg" type="capsule" size="0.012" fromto="-0.45 -0.7 0 -0.42 -0.69 0.12"/>
+      <geom class="veg" type="capsule" size="0.012" fromto="0.4 -0.75 0 0.38 -0.77 0.13"/>
+      <geom class="veg" type="ellipsoid" size="0.1 0.08 0.05" pos="0.45 -0.72 0.03" material="leaf_dark"/>
+    </body>
+
+    <!-- ===================== Panel 2 (OBSTRUCTED by vegetation) ===================== -->
+    <body name="panel_2" pos="0 2.5 0">
+      <geom class="leg" size="0.04 0.04 0.385" pos="-0.65 -0.25 0.385"/>
+      <geom class="leg" size="0.04 0.04 0.385" pos="0.65 -0.25 0.385"/>
+      <geom class="leg" size="0.04 0.04 0.6" pos="-0.65 0.25 0.6"/>
+      <geom class="leg" size="0.04 0.04 0.6" pos="0.65 0.25 0.6"/>
+      <body name="panel_2_surface" pos="0 0 1.0" euler="40 0 0">
+        <geom class="frame" name="panel_2_frame"/>
+        <geom class="cells"/>
+        <geom class="grid_row" pos="0 -0.163 0.0235"/>
+        <geom class="grid_row" pos="0 0.163 0.0235"/>
+        <geom class="grid_col" pos="-0.527 0 0.0235"/>
+        <geom class="grid_col" pos="-0.263 0 0.0235"/>
+        <geom class="grid_col" pos="0 0 0.0235"/>
+        <geom class="grid_col" pos="0.263 0 0.0235"/>
+        <geom class="grid_col" pos="0.527 0 0.0235"/>
+        <!-- Vines and leaf clusters growing over the lower-left of the panel surface. -->
+        <geom class="veg" type="capsule" size="0.022" fromto="-0.72 -0.52 0.035 -0.58 0.12 0.035" material="leaf_dark"/>
+        <geom class="veg" type="capsule" size="0.022" fromto="-0.48 -0.52 0.035 -0.22 0.02 0.035" material="leaf_dark"/>
+        <geom class="veg" type="capsule" size="0.018" fromto="-0.66 -0.18 0.035 -0.30 -0.08 0.035" material="leaf_mid"/>
+        <geom class="veg" type="ellipsoid" size="0.14 0.09 0.025" pos="-0.60 0.05 0.04" material="leaf_mid"/>
+        <geom class="veg" type="ellipsoid" size="0.12 0.08 0.025" pos="-0.28 -0.02 0.04" material="leaf_light"/>
+        <geom class="veg" type="ellipsoid" size="0.16 0.10 0.025" pos="-0.45 -0.30 0.04" material="leaf_mid"/>
+        <geom class="veg" type="ellipsoid" size="0.10 0.07 0.025" pos="-0.10 -0.38 0.04" material="leaf_light"/>
+        <geom class="veg" type="capsule" size="0.018" fromto="-0.35 -0.50 0.035 -0.05 0.25 0.035" material="leaf_mid"/>
+        <geom class="veg" type="ellipsoid" size="0.10 0.07 0.025" pos="-0.12 0.20 0.04" material="leaf_light"/>
+      </body>
+      <!-- Bushes just in front of the lower panel edge (tops 0.56-0.92 m): from the robot camera
+           they hide roughly the lower 20-40% of the left half of the panel. -->
+      <geom class="veg" type="ellipsoid" size="0.15 0.12 0.38" pos="-0.74 -0.52 0.38" material="leaf_dark"/>
+      <geom class="veg" type="ellipsoid" size="0.18 0.13 0.45" pos="-0.52 -0.50 0.45" material="leaf_mid"/>
+      <geom class="veg" type="ellipsoid" size="0.17 0.12 0.42" pos="-0.30 -0.52 0.42" material="leaf_dark"/>
+      <geom class="veg" type="ellipsoid" size="0.15 0.12 0.36" pos="-0.10 -0.50 0.36" material="leaf_mid"/>
+      <geom class="veg" type="ellipsoid" size="0.12 0.10 0.28" pos="0.06 -0.52 0.28" material="leaf_dark"/>
+      <geom class="veg" type="ellipsoid" size="0.14 0.10 0.12" pos="-0.60 -0.52 0.80" material="leaf_light"/>
+      <geom class="veg" type="ellipsoid" size="0.12 0.10 0.10" pos="-0.38 -0.50 0.78" material="leaf_light"/>
+      <!-- A few tall grass blades. -->
+      <geom class="veg" type="capsule" size="0.012" fromto="-0.85 -0.48 0 -0.90 -0.50 0.90"/>
+      <geom class="veg" type="capsule" size="0.012" fromto="-0.20 -0.48 0 -0.16 -0.52 0.95" material="leaf_light"/>
+      <geom class="veg" type="capsule" size="0.012" fromto="0.15 -0.48 0 0.20 -0.50 0.80"/>
+    </body>
+
+    <!-- ===================== Panel 3 (healthy, clean) ===================== -->
+    <body name="panel_3" pos="3 2.5 0">
+      <geom class="leg" size="0.04 0.04 0.385" pos="-0.65 -0.25 0.385"/>
+      <geom class="leg" size="0.04 0.04 0.385" pos="0.65 -0.25 0.385"/>
+      <geom class="leg" size="0.04 0.04 0.6" pos="-0.65 0.25 0.6"/>
+      <geom class="leg" size="0.04 0.04 0.6" pos="0.65 0.25 0.6"/>
+      <body name="panel_3_surface" pos="0 0 1.0" euler="40 0 0">
+        <geom class="frame" name="panel_3_frame"/>
+        <geom class="cells"/>
+        <geom class="grid_row" pos="0 -0.163 0.0235"/>
+        <geom class="grid_row" pos="0 0.163 0.0235"/>
+        <geom class="grid_col" pos="-0.527 0 0.0235"/>
+        <geom class="grid_col" pos="-0.263 0 0.0235"/>
+        <geom class="grid_col" pos="0 0 0.0235"/>
+        <geom class="grid_col" pos="0.263 0 0.0235"/>
+        <geom class="grid_col" pos="0.527 0 0.0235"/>
+      </body>
+    </body>
+
+    <!-- ===================== Robot: differential drive + mast camera ===================== -->
+    <body name="robot" pos="-5 0.5 0.1">
+      <freejoint name="robot_root"/>
+      <geom name="chassis" type="box" size="0.2 0.15 0.05" material="robot_body" mass="8"/>
+      <geom name="caster_front" class="caster" pos="0.16 0 -0.07"/>
+      <geom name="caster_rear" class="caster" pos="-0.16 0 -0.07"/>
+      <geom name="mast" type="cylinder" fromto="0.14 0 0.05 0.14 0 0.62" size="0.015" material="dark" mass="0.2"/>
+      <geom name="cam_housing" type="box" size="0.04 0.05 0.03" pos="0.17 0 0.65" material="dark" mass="0.1"/>
+      <!-- Forward-looking RGB camera, 0.75 m above ground, pitched up 6 degrees. -->
+      <camera name="robot_cam" pos="0.215 0 0.65" xyaxes="0 -1 0 -0.105 0 0.995" fovy="60"/>
+      <!-- Chase camera: follows the robot, fixed world orientation. -->
+      <camera name="chase" mode="trackcom" pos="-2 -2 1.8" xyaxes="0.707 -0.707 0 0.332 0.332 0.884" fovy="60"/>
+      <body name="left_wheel" pos="0 0.19 -0.02">
+        <joint name="left_wheel" class="wheel"/>
+        <geom name="left_wheel_geom" class="wheel"/>
+      </body>
+      <body name="right_wheel" pos="0 -0.19 -0.02">
+        <joint name="right_wheel" class="wheel"/>
+        <geom name="right_wheel_geom" class="wheel"/>
+      </body>
+    </body>
+    <!-- Visual-only "ghost" robot (mocap body, no collisions). scripts/compare.py moves it to show a
+         second controller next to the real robot. Parked below the ground otherwise, so it never
+         appears in camera images. -->
+    <body name="ghost" mocap="true" pos="0 0 -5">
+      <geom class="ghost" type="box" size="0.2 0.15 0.05"/>
+      <geom class="ghost" type="cylinder" fromto="0.14 0 0.05 0.14 0 0.62" size="0.015"/>
+      <geom class="ghost" type="box" size="0.04 0.05 0.03" pos="0.17 0 0.65"/>
+      <geom class="ghost" type="cylinder" size="0.08 0.025" zaxis="0 1 0" pos="0 0.19 -0.02"/>
+      <geom class="ghost" type="cylinder" size="0.08 0.025" zaxis="0 1 0" pos="0 -0.19 -0.02"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- Wheel angular-velocity servos. ctrl = target wheel speed [rad/s]. -->
+    <velocity name="left_motor" joint="left_wheel" kv="2" ctrlrange="-12 12" forcerange="-4 4"/>
+    <velocity name="right_motor" joint="right_wheel" kv="2" ctrlrange="-12 12" forcerange="-4 4"/>
+  </actuator>
+</mujoco>
