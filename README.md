@@ -150,5 +150,4 @@ models/ppo_nav.zip   Trained policy used for every result above
 docs/                README figures and the demo video
 ```
 
-Development followed five gated phases (simulation → RL → vision/API → integration → evaluation),
-documented in `CLAUDE.md`.
+Development followed five gated phases (simulation → RL → vision/API → integration → evaluation).
